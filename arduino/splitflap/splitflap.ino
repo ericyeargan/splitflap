@@ -73,6 +73,7 @@ uint32_t color_orange = strip.Color(30, 7, 0);
 BluetoothSerial SerialBT;
 #endif
 
+void dump_status();
 
 void setup() {
   Serial.begin(38400);

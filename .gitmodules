@@ -1,0 +1,9 @@
+[submodule "arduino/arduino-cmake"]
+	path = arduino/arduino-cmake
+	url = https://github.com/ericyeargan/arduino-cmake
+[submodule "arduino/Arduino-CMake-NG"]
+	path = arduino/Arduino-CMake-NG
+	url = https://github.com/arduino-cmake/Arduino-CMake-NG.git
+[submodule "arduino/Adafruit_NeoPixel"]
+	path = arduino/Adafruit_NeoPixel
+	url = https://github.com/adafruit/Adafruit_NeoPixel.git
