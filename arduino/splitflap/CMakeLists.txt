@@ -18,7 +18,19 @@ add_arduino_executable(${target_name} ${board_id} splitflap.cpp)
 link_platform_library(${target_name} SPI ${board_id})
 link_arduino_library(${target_name} Adafruit_NeoPixel ${board_id})
 
-if (ARDUINO_PORT)
+if (ESP_LINK_HOST)
+	message(STATUS "esp-link hostname: ${ESP_LINK_HOST}")
+
+	# The TARGET_FILE generator expression doesn't seem to work with add_arduino_executable
+	set(TARGET_FILE ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.hex)
+
+	add_custom_target(upload ALL
+			COMMAND ${CMAKE_SOURCE_DIR}/avrflash ${ESP_LINK_HOST} ${TARGET_FILE}
+			COMMENT "Uploading ${target_name}"
+			DEPENDS ${target_name})
+
+	add_custom_target(monitor COMMAND nc ${ESP_LINK_HOST} 23)
+elseif(ARDUINO_PORT)
 	message(STATUS "Arduino serial device: ${ARDUINO_PORT}")
 
 	set_upload_target_flags(${target_name} ${board_id} ${ARDUINO_PORT} upload_args)

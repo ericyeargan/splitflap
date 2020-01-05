@@ -16,7 +16,7 @@
 
 /***** CONFIGURATION *****/
 
-#define NUM_MODULES (12) //ON ESP32 you can control much more modules, but need to adapt SPI_IO_CONFIG accordingly
+#define NUM_MODULES (4) //ON ESP32 you can control much more modules, but need to adapt SPI_IO_CONFIG accordingly
 #define SENSOR_TEST false
 #define SPI_IO true
 #define REVERSE_MOTOR_DIRECTION false
@@ -77,7 +77,7 @@ BluetoothSerial SerialBT;
 void dump_status();
 
 void setup() {
-  Serial.begin(38400);
+  Serial.begin(115200);
 
   motor_sensor_setup();
   motor_sensor_io();
