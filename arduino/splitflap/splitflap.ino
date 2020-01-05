@@ -51,11 +51,12 @@ const uint8_t flaps[] = {
 int recv_buffer[NUM_MODULES];
 
 #if NEOPIXEL_DEBUGGING_ENABLED
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_MODULES, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-uint32_t color_green = strip.Color(0, 30, 0);
-uint32_t color_red = strip.Color(100, 0, 0);
-uint32_t color_purple = strip.Color(15, 0, 15);
-uint32_t color_orange = strip.Color(30, 7, 0);
+auto pixelType = NEO_GRB + NEO_KHZ800; // NOLINT(hicpp-signed-bitwise)
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_MODULES, NEOPIXEL_PIN, pixelType);
+uint32_t color_green = Adafruit_NeoPixel::Color(0, 30, 0);
+uint32_t color_red = Adafruit_NeoPixel::Color(100, 0, 0);
+uint32_t color_purple = Adafruit_NeoPixel::Color(15, 0, 15);
+uint32_t color_orange = Adafruit_NeoPixel::Color(30, 7, 0);
 #endif
 
 #ifdef __AVR__
@@ -138,7 +139,6 @@ inline int8_t FindFlapIndex(uint8_t character) {
     return -1;
 }
 
-bool was_idle = false;
 bool was_stopped = false;
 bool pending_no_op = false;
 uint8_t recv_count = 0;
@@ -157,7 +157,7 @@ inline void run_iteration() {
         || (modules[i].state == NORMAL && modules[i].current_accel_step == 0);
       all_idle &= is_idle;
       all_stopped &= modules[i].current_accel_step == 0;
-      if (i & 0b11) motor_sensor_io();
+      if (i & 0b11u) motor_sensor_io();
     }
     motor_sensor_io();
 
@@ -178,6 +178,7 @@ inline void run_iteration() {
             break;
 #endif
           case PANIC:
+          default:
             color = color_red;
             break;
         }
@@ -190,7 +191,7 @@ inline void run_iteration() {
         int b = Serial.read();
         switch (b) {
           case '@':
-            for (uint8_t i = 0; i < NUM_MODULES; i++) {
+            for (uint8_t i = 0; i < NUM_MODULES; i++) { // NOLINT(modernize-loop-convert)
               modules[i].ResetErrorCounters();
               modules[i].GoHome();
             }
@@ -273,7 +274,6 @@ inline void run_iteration() {
       }
 
     }
-    was_idle = all_idle;
     was_stopped = all_stopped;
 }
 
@@ -291,7 +291,7 @@ void sensor_test_iteration() {
 
       // Make LEDs flash in sequence to indicate sensor test mode
       if ((millis() / 32) % NUM_MODULES == i) {
-        color += 8 + (8 << 8) + (8 << 16);
+        color += 8u + (8u << 8u) + (8u << 16u);
       }
       strip.setPixelColor(i, color);
     }
@@ -304,9 +304,11 @@ void sensor_test_iteration() {
 #endif
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 
 void loop() {
-  while (1) {
+  while (true) {
 #if SENSOR_TEST
     sensor_test_iteration();
 #else
@@ -319,6 +321,8 @@ void loop() {
     #endif
   }
 }
+
+#pragma clang diagnostic pop
 
 void dump_status() {
   Serial.print(FAVR("{\"type\":\"status\", \"modules\":["));
