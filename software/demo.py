@@ -6,6 +6,8 @@ import time
 import serial
 import serial.tools.list_ports
 
+from transport import SerialTransport, EspLinkTransport
+
 from splitflap import splitflap
 
 words = [
@@ -18,15 +20,25 @@ words = [
 
 def run():
     port = ask_for_serial_port()
+    if port is not None:
+        transport = SerialTransport(port, 38400)
+    else:
+        esp_link_address = ask_for_esp_link_address()
+        transport = EspLinkTransport(esp_link_address)
 
     print('Starting...')
-    with splitflap(port) as s:
+    with transport as t:
+        s = splitflap(t)
         while True:
             word = random.choice(words)
             print('Going to {}'.format(word))
             status = s.set_text(word)
             print_status(status)
             time.sleep(10)
+
+
+def ask_for_esp_link_address():
+    return input('What is the ESP-link network address? ')
 
 
 def ask_for_serial_port():
@@ -41,10 +53,13 @@ def ask_for_serial_port():
     for i, port in enumerate(ports):
         print('[{: 2}] {} - {}'.format(i, port.device, port.description))
     print()
-    value = raw_input('Use which port? ')
-    port_index = int(value)
-    assert 0 <= port_index < len(ports)
-    return ports[port_index].device
+    value = input('Use which port (or <enter> to specify an ESP-link address)? ')
+    if len(value) > 0:
+        port_index = int(value)
+        assert 0 <= port_index < len(ports)
+        return ports[port_index].device
+    else:
+        return None
 
 
 def print_status(status):

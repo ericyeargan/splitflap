@@ -1,7 +1,4 @@
 import json
-from contextlib import contextmanager
-
-import serial
 
 _ALPHABET = {
     ' ',
@@ -16,8 +13,8 @@ _ALPHABET = {
 
 class Splitflap(object):
 
-    def __init__(self, serial_instance):
-        self.serial = serial_instance
+    def __init__(self, transport):
+        self._transport = transport
 
         self.has_inited = False
         self.num_modules = 0
@@ -27,7 +24,7 @@ class Splitflap(object):
 
     def _loop_for_status(self):
         while True:
-            line = self.serial.readline().lstrip('\0').rstrip('\n')
+            line = self._transport.readline().lstrip('\0').rstrip('\n')
             data = json.loads(line)
             t = data['type']
             if t == 'init':
@@ -70,20 +67,18 @@ class Splitflap(object):
                 list(_ALPHABET),
             )
         self.last_command = text
-        self.serial.write('={}\n'.format(text))
+        self._transport.write('={}\n'.format(text))
         return self._loop_for_status()
 
     def recalibrate_all(self):
-        self.serial.write('@')
+        self._transport.write('@')
         return self._loop_for_status()
 
     def get_status(self):
         return self.last_status
 
 
-@contextmanager
-def splitflap(serial_port):
-    with serial.Serial(serial_port, 38400) as ser:
-        s = Splitflap(ser)
-        s._loop_for_status()
-        yield s
+def splitflap(transport):
+    s = Splitflap(transport)
+    s._loop_for_status()
+    return s
