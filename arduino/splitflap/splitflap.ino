@@ -77,7 +77,12 @@ BluetoothSerial SerialBT;
 void dump_status();
 
 void setup() {
-  Serial.begin(115200);
+  // Setting the serial rate immediately on boot prevents the esp-link
+  // programmer from syncing up correctly at the bootloader rate (115200) so
+  // add a short delay.  Ideally, we'd just run at the same rate but the uno
+  // seems to occasionally drop characters at higher rates.
+  delay(250);
+  Serial.begin(38400);
 
   motor_sensor_setup();
   motor_sensor_io();
