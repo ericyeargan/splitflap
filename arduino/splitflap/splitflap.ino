@@ -16,10 +16,9 @@
 
 /***** CONFIGURATION *****/
 
-#define NUM_MODULES (4) //ON ESP32 you can control much more modules, but need to adapt SPI_IO_CONFIG accordingly
+#define NUM_MODULES (12) //ON ESP32 you can control much more modules, but need to adapt SPI_IO_CONFIG accordingly
 #define SENSOR_TEST false
 #define SPI_IO true
-#define REVERSE_MOTOR_DIRECTION false
 #define BLUETOOTH true
 
 // This should match the order of flaps on the spool:
@@ -92,6 +91,7 @@ void setup() {
   Serial.print(FAVR("}\n"));
 
 #if NEOPIXEL_DEBUGGING_ENABLED
+  strip.setBrightness(64);
   strip.begin();
   strip.show();
 

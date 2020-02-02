@@ -69,23 +69,23 @@ uint8_t motor_buffer[MOTOR_BUFFER_LENGTH];
 #define SENSOR_BUFFER_LENGTH (NUM_MODULES / 4 + (NUM_MODULES % 4 != 0))
 uint8_t sensor_buffer[SENSOR_BUFFER_LENGTH];
 
-SplitflapModule moduleA(motor_buffer[0], 0, sensor_buffer[0], B00000001);
-SplitflapModule moduleB(motor_buffer[0], 4, sensor_buffer[0], B00000010);
-SplitflapModule moduleC(motor_buffer[1], 0, sensor_buffer[0], B00000100);
-SplitflapModule moduleD(motor_buffer[1], 4, sensor_buffer[0], B00001000);
+SplitflapModule moduleA(motor_buffer[0], 0, sensor_buffer[0], B00000001, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleB(motor_buffer[0], 4, sensor_buffer[0], B00000010, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleC(motor_buffer[1], 0, sensor_buffer[0], B00000100, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleD(motor_buffer[1], 4, sensor_buffer[0], B00001000, MOTOR_DIRECTION_NORMAL);
 
 #if NUM_MODULES > 4
-SplitflapModule moduleE(motor_buffer[2], 0, sensor_buffer[1], B00000001);
-SplitflapModule moduleF(motor_buffer[2], 4, sensor_buffer[1], B00000010);
-SplitflapModule moduleG(motor_buffer[3], 0, sensor_buffer[1], B00000100);
-SplitflapModule moduleH(motor_buffer[3], 4, sensor_buffer[1], B00001000);
+SplitflapModule moduleE(motor_buffer[2], 0, sensor_buffer[1], B00000001, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleF(motor_buffer[2], 4, sensor_buffer[1], B00000010, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleG(motor_buffer[3], 0, sensor_buffer[1], B00000100, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleH(motor_buffer[3], 4, sensor_buffer[1], B00001000, MOTOR_DIRECTION_NORMAL);
 #endif
 
 #if NUM_MODULES > 8
-SplitflapModule moduleI(motor_buffer[4], 0, sensor_buffer[2], B00000001);
-SplitflapModule moduleJ(motor_buffer[4], 4, sensor_buffer[2], B00000010);
-SplitflapModule moduleK(motor_buffer[5], 0, sensor_buffer[2], B00000100);
-SplitflapModule moduleL(motor_buffer[5], 4, sensor_buffer[2], B00001000);
+SplitflapModule moduleI(motor_buffer[4], 0, sensor_buffer[2], B00000001, MOTOR_DIRECTION_NORMAL);
+SplitflapModule moduleJ(motor_buffer[4], 4, sensor_buffer[2], B00000010, MOTOR_DIRECTION_REVERSE);
+SplitflapModule moduleK(motor_buffer[5], 0, sensor_buffer[2], B00000100, MOTOR_DIRECTION_REVERSE);
+SplitflapModule moduleL(motor_buffer[5], 4, sensor_buffer[2], B00001000, MOTOR_DIRECTION_REVERSE);
 #endif
 
 SplitflapModule modules[] = {

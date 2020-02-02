@@ -81,6 +81,11 @@ enum State {
 #endif
 };
 
+enum MotorDirection {
+    MOTOR_DIRECTION_NORMAL,
+    MOTOR_DIRECTION_REVERSE
+};
+
 class SplitflapModule {
  private:
   // Configuration:
@@ -89,6 +94,8 @@ class SplitflapModule {
 
   uint8_t &sensor_in;
   const uint8_t sensor_bitmask;
+
+  uint8_t const* step_pattern;
 
   // State:
   bool last_home = false;
@@ -131,7 +138,8 @@ class SplitflapModule {
     uint8_t &motor_out,
     const uint8_t motor_bitshift,
     uint8_t &sensor_in,
-    const uint8_t sensor_bitmask
+    const uint8_t sensor_bitmask,
+    MotorDirection motorDirection
   );
 
 #if HOME_CALIBRATION_ENABLED
@@ -160,29 +168,32 @@ class SplitflapModule {
 #define MOT_PHASE_C B00000010
 #define MOT_PHASE_D B00000001
 
-const uint8_t step_pattern[] = {
-#if REVERSE_MOTOR_DIRECTION
-  MOT_PHASE_D | MOT_PHASE_A,
-  MOT_PHASE_C | MOT_PHASE_D,
-  MOT_PHASE_B | MOT_PHASE_C,
-  MOT_PHASE_A | MOT_PHASE_B,
-#else
-  MOT_PHASE_A | MOT_PHASE_B,
-  MOT_PHASE_B | MOT_PHASE_C,
-  MOT_PHASE_C | MOT_PHASE_D,
-  MOT_PHASE_D | MOT_PHASE_A,
-#endif
+const uint8_t REVERSE_STEP_PATTERN[] = {
+    MOT_PHASE_D | MOT_PHASE_A,
+    MOT_PHASE_C | MOT_PHASE_D,
+    MOT_PHASE_B | MOT_PHASE_C,
+    MOT_PHASE_A | MOT_PHASE_B
+};
+
+const uint8_t NORMAL_STEP_PATTERN[] = {
+    MOT_PHASE_A | MOT_PHASE_B,
+    MOT_PHASE_B | MOT_PHASE_C,
+    MOT_PHASE_C | MOT_PHASE_D,
+    MOT_PHASE_D | MOT_PHASE_A
 };
 
 SplitflapModule::SplitflapModule(
   uint8_t &motor_out,
   const uint8_t motor_bitshift,
   uint8_t &sensor_in,
-  const uint8_t sensor_bitmask) :
+  const uint8_t sensor_bitmask,
+  MotorDirection motorDirection) :
     motor_out(motor_out),
     motor_bitshift(motor_bitshift),
     sensor_in(sensor_in),
-    sensor_bitmask(sensor_bitmask)
+    sensor_bitmask(sensor_bitmask),
+    step_pattern(motorDirection == MOTOR_DIRECTION_NORMAL ? NORMAL_STEP_PATTERN
+                       : REVERSE_STEP_PATTERN)
 {
 }
 
