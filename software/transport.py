@@ -5,6 +5,7 @@ import requests
 
 class SerialTransport(object):
     def __init__(self, device, baud_rate):
+        self._serial = None
         self._device = device
         self._baud_rate = baud_rate
 
@@ -24,22 +25,28 @@ class SerialTransport(object):
 
 class EspLinkTransport(object):
     def __init__(self, host):
+        self._socket = None
         self._host = host
 
     def __enter__(self):
-        self._socket = None
-        self._open_socket()
-
-        requests.post(f'http://{self._host}/console/reset')
+        self.open()
 
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._socket.close()
 
-    def _open_socket(self):
+    def open(self):
+        self._open_socket()
+
+        requests.post(f'http://{self._host}/console/reset')
+
+    def close(self):
         if self._socket is not None:
             self._socket.close()
+
+    def _open_socket(self):
+        self.close()
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.connect((self._host, 23))

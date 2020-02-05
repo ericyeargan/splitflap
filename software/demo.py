@@ -8,33 +8,57 @@ import serial.tools.list_ports
 
 from transport import SerialTransport, EspLinkTransport
 
-from splitflap import splitflap
-
-words = [
-    'duck', 'goat', 'lion', 'bear', 'mole', 'crab',
-    'hare', 'toad', 'wolf', 'lynx', 'cats', 'dogs',
-    'bees', 'mule', 'seal', 'bird', 'frog', 'deer',
-    'lamb', 'fish', 'hawk', 'kiwi',
-]
+from splitflap import Splitflap, MockSplitflap
 
 
 def run():
+    transport = None
+
     port = ask_for_serial_port()
     if port is not None:
         transport = SerialTransport(port, 38400)
     else:
         esp_link_address = ask_for_esp_link_address()
-        transport = EspLinkTransport(esp_link_address)
+        if esp_link_address is not None and len(esp_link_address) > 0:
+            transport = EspLinkTransport(esp_link_address)
 
-    print('Starting...')
-    with transport as t:
-        s = splitflap(t)
+    def show_words(s):
+        num_modules = s.get_num_modules()
+
+        with open('words.txt') as word_file:
+            words = []
+
+            def char_map(char):
+                char = char.lower()
+                if not s.is_in_alphabet(char):
+                    return ' '
+                else:
+                    return char
+
+            while True:
+                word = word_file.readline()
+                if len(word) == 0:
+                    break
+
+                word = word.strip()
+
+                if len(word) == num_modules:
+                    word = "".join(map(char_map, word))
+                    words.append(word)
+
         while True:
             word = random.choice(words)
             print('Going to {}'.format(word))
             status = s.set_text(word)
             print_status(status)
-            time.sleep(10)
+            time.sleep(4)
+
+    print('Starting...')
+    if transport is None:
+        show_words(MockSplitflap(12))
+    else:
+        with transport as t:
+            show_words(Splitflap(t))
 
 
 def ask_for_esp_link_address():
