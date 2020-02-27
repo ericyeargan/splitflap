@@ -46,8 +46,9 @@ const uint8_t flaps[] = {
 #include <Adafruit_NeoPixel.h>
 #endif
 
-
-int recv_buffer[NUM_MODULES];
+#define RECV_BUFFER_SIZE (NUM_MODULES + 1)
+int recv_buffer[RECV_BUFFER_SIZE];
+uint8_t recv_count = 0;
 
 #if NEOPIXEL_DEBUGGING_ENABLED
 auto pixelType = NEO_GRB + NEO_KHZ800; // NOLINT(hicpp-signed-bitwise)
@@ -146,7 +147,6 @@ inline int8_t FindFlapIndex(uint8_t character) {
 
 bool was_stopped = false;
 bool pending_no_op = false;
-uint8_t recv_count = 0;
 
 inline void run_iteration() {
     boolean all_idle = true;
@@ -194,38 +194,52 @@ inline void run_iteration() {
 
       while (Serial.available() > 0) {
         int b = Serial.read();
-        switch (b) {
-          case '@':
-            for (uint8_t i = 0; i < NUM_MODULES; i++) { // NOLINT(modernize-loop-convert)
-              modules[i].ResetErrorCounters();
-              modules[i].GoHome();
-            }
-            break;
-          case '#':
-            pending_no_op = true;
-            break;
-          case '=':
-            recv_count = 0;
-            break;
-          case '\n':
-              Serial.print(FAVR("{\"type\":\"move_echo\", \"dest\":\""));
-              for (uint8_t i = 0; i < recv_count; i++) {
-                int8_t index = FindFlapIndex(recv_buffer[i]);
-                if (index != -1) {
-                  modules[i].GoToFlapIndex(index);
+        if (b == '\n') {
+          if (recv_count > 0) {
+            int const op_code = recv_buffer[0];
+            switch (op_code) {
+              case '@':
+                for (uint8_t i = 0; i < NUM_MODULES; i++) { // NOLINT(modernize-loop-convert)
+                  modules[i].ResetErrorCounters();
+                  modules[i].GoHome();
                 }
-                Serial.write(recv_buffer[i]);
+                break;
+              case '=':
+              case '+': {
+                SplitflapModule::FlapRefresh refresh =
+                    op_code == '=' ? SplitflapModule::FLAP_REFRESH_FORCE
+                                   : SplitflapModule::FLAP_REFRESH_NONE;
+
+                Serial.print(FAVR("{\"type\":\"move_echo\", \"refresh\":"));
+                if (refresh == SplitflapModule::FLAP_REFRESH_FORCE) {
+                  Serial.print(FAVR("\"force\""));
+                } else {
+                  Serial.print(FAVR("\"none\""));
+                }
+
+                Serial.print(FAVR(", \"dest\":\""));
+                for (uint8_t i = 1; i < recv_count; i++) {
+                  int8_t index = FindFlapIndex(recv_buffer[i]);
+                  if (index != -1) {
+                    modules[i - 1].GoToFlapIndex(index, refresh);
+                  }
+                  Serial.write(recv_buffer[i]);
+                }
+                Serial.print(FAVR("\"}\n"));
+                Serial.flush();
+                break;
               }
-              Serial.print(FAVR("\"}\n"));
-              Serial.flush();
-              break;
-          default:
-            if (recv_count > NUM_MODULES - 1) {
+              default:
+              case '#':
+                pending_no_op = true;
               break;
             }
-            recv_buffer[recv_count] = b;
-            recv_count++;
-            break;
+          }
+          recv_count = 0;
+        }
+        else if (recv_count < RECV_BUFFER_SIZE) {
+          recv_buffer[recv_count] = b;
+          recv_count++;
         }
       }
 

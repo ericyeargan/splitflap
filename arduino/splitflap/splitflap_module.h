@@ -149,7 +149,12 @@ class SplitflapModule {
 #endif
   uint8_t current_accel_step = 0;
 
-  void GoToFlapIndex(uint8_t index);
+  typedef enum {
+    FLAP_REFRESH_FORCE,
+    FLAP_REFRESH_NONE
+  } FlapRefresh;
+
+  void GoToFlapIndex(uint8_t index, FlapRefresh refresh);
   uint8_t GetCurrentFlapIndex();
   void GoHome();
   void ResetErrorCounters();
@@ -380,12 +385,14 @@ inline void SplitflapModule::UpdateExpectedHome() {
 
 
 __attribute__((always_inline))
-inline void SplitflapModule::GoToFlapIndex(uint8_t index) {
+inline void SplitflapModule::GoToFlapIndex(uint8_t index, FlapRefresh refresh) {
     if (state != NORMAL || current_accel_step != 0) {
         return;
     }
-    target_flap_index = index;
-    GoToTargetFlapIndex();
+    if (refresh == FLAP_REFRESH_FORCE || target_flap_index != index) {
+      target_flap_index = index;
+      GoToTargetFlapIndex();
+    }
 }
 
 __attribute__((always_inline))
