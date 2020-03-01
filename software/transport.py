@@ -10,17 +10,24 @@ class SerialTransport(object):
         self._baud_rate = baud_rate
 
     def __enter__(self):
-        self._serial = serial.Serial(self._device, self._baud_rate)
+        self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._serial.close()
+        self.close()
+
+    def open(self):
+        self._serial = serial.Serial(self._device, self._baud_rate)
+
+    def close(self):
+        if self._serial is not None:
+            self._serial.close()
 
     def readline(self):
-        return self._serial.readline()
+        return self._serial.readline().decode('utf-8')
 
     def write(self, data):
-        return self._serial.write(data)
+        return self._serial.write(data.encode('utf-8'))
 
 
 class EspLinkTransport(object):

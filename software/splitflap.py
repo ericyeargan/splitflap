@@ -36,6 +36,13 @@ class SplitflapBase(object):
     def get_num_modules(self):
         return self._num_modules
 
+    def set_text(self, text):
+        pass
+
+    def clear_text(self):
+        text = ''.ljust(self.get_num_modules())
+        return self.set_text(text)
+
 
 class MockSplitflap(SplitflapBase):
     def __init__(self, num_modules):
@@ -52,7 +59,12 @@ class MockSplitflap(SplitflapBase):
             }
             self._last_status.append(status)
 
+
     def set_text(self, text):
+        print(f'MockSplitflap.set_text: {text}')
+        return self._set_text(text)
+
+    def _set_text(self, text):
         validate_text(text)
 
         for module_index in range(0, self._num_modules):
@@ -60,6 +72,10 @@ class MockSplitflap(SplitflapBase):
                 self._last_status[module_index]['flap'] = text[module_index]
 
         return self._last_status
+
+    def update_text(self, text):
+        print(f'MockSplitflap.update_text: {text}')
+        return self._set_text(text)
 
     def recalibrate_all(self):
         return self._last_status
@@ -80,7 +96,8 @@ class Splitflap(SplitflapBase):
 
     def _loop_for_status(self):
         while True:
-            line = self._transport.readline().lstrip('\0').rstrip('\n')
+            line = self._transport.readline()
+            line = line.lstrip('\0').rstrip('\n')
             data = json.loads(line)
             t = data['type']
             if t == 'init':
@@ -113,13 +130,19 @@ class Splitflap(SplitflapBase):
             else:
                 raise RuntimeError('Unexpected message: {!r}'.format(data))
 
-    def set_text(self, text):
+    def _change_text(self, op_code, text):
         validate_text(text)
 
         self._last_command = text
-        self._transport.write('={}\n'.format(text))
+        self._transport.write('{}{}\n'.format(op_code, text))
 
         return self._loop_for_status()
+
+    def set_text(self, text):
+        return self._change_text('=', text)
+
+    def update_text(self, text):
+        return self._change_text('+', text)
 
     def recalibrate_all(self):
         self._transport.write('@')
