@@ -46,6 +46,9 @@ const uint8_t flaps[] = {
 #include <Adafruit_NeoPixel.h>
 #endif
 
+#include "bell.h"
+
+
 #define RECV_BUFFER_SIZE (NUM_MODULES + 1)
 int recv_buffer[RECV_BUFFER_SIZE];
 uint8_t recv_count = 0;
@@ -73,6 +76,10 @@ uint32_t color_orange = Adafruit_NeoPixel::Color(30, 7, 0);
 
 BluetoothSerial SerialBT;
 #endif
+
+#define BELL_OUTPUT_PIN 10
+
+Bell bell(BELL_OUTPUT_PIN);
 
 void dump_status();
 
@@ -120,6 +127,8 @@ void setup() {
     delay(100);
   }
 #endif
+
+  bell.Setup();
 
   for (uint8_t i = 0; i < NUM_MODULES; i++) {
     recv_buffer[i] = 0;
@@ -192,6 +201,8 @@ inline void run_iteration() {
       strip.show();
 #endif
 
+      bell.Update();
+
       while (Serial.available() > 0) {
         int b = Serial.read();
         if (b == '\n') {
@@ -229,6 +240,10 @@ inline void run_iteration() {
                 Serial.flush();
                 break;
               }
+              case 'd':
+                  Serial.print("ding\n");
+                  bell.Ding();
+                  break;
               default:
               case '#':
                 pending_no_op = true;
@@ -289,6 +304,7 @@ inline void run_iteration() {
       }
   
       if (!was_stopped && all_stopped) {
+        bell.Ding();
         dump_status();
       }
 
