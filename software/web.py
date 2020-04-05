@@ -57,6 +57,8 @@ class SplitflapMessenger:
         self._formatter = MessageFormatter(self._splitflap.get_num_modules(),
                                            lambda char: self._splitflap.is_in_alphabet(char))
         self._message_task = None
+        self._message_task_cancel = False
+        self._force_refresh = False
         self._message_text = ''
 
     def select(self):
@@ -67,7 +69,7 @@ class SplitflapMessenger:
 
     def exit(self):
         if self._message_task is not None:
-            self._message_task.cancel()
+            self._message_task_cancel = True
 
     def _check_module_status(self):
         normal_module_count = 0
@@ -81,6 +83,7 @@ class SplitflapMessenger:
 
     def _on_display_message_task_done(self, task):
         self._message_task = None
+        # noinspection PyBroadException
         try:
             task.exception()
         except CancelledError as e:
@@ -90,32 +93,36 @@ class SplitflapMessenger:
 
     async def _display_message(self, message):
         for line in message:
-            self._check_module_status()
-            self._splitflap.set_text(line)
-            # need to shield so that the sleep doesn't get canceled with the request
-            await shield(asyncio.sleep(2))
+            if self._message_task_cancel:
+                return
 
-    def set_message(self, message):
+            self._check_module_status()
+            self._splitflap.set_text(line, self._force_refresh)
+            await asyncio.sleep(2)
+
+    async def set_message(self, message, force_refresh):
         if self._message_task is not None:
-            self._message_task.cancel()
+            # since we've shielded our task from cancellation, set the cancel flag and wait for it to complete
+            # TODO: this means that we may have to wait up to the inter-line interval before we can set the message
+            self._message_task_cancel = True
+            await self._message_task
 
         self._check_module_status()
 
         message = self._formatter.format(message)
 
+        self._message_task_cancel = False
         # need to shield so that the task doesn't get canceled with the request
         self._message_task = shield(asyncio.create_task(self._display_message(message)))
         self._message_task.add_done_callback(self._on_display_message_task_done)
 
         self._message_text = '\n'.join(message) + '\n'
+        self._force_refresh = force_refresh
 
         return self._message_text
 
     def get_message(self):
         return self._message_text
-
-    def update_message(self, message):
-        pass
 
 
 if __name__ == '__main__':
@@ -156,6 +163,7 @@ if __name__ == '__main__':
 
     async def _activate_mode(mode_name):
         global active_mode
+        global active_mode_name
 
         if active_mode_name == mode_name:
             return None
@@ -172,6 +180,7 @@ if __name__ == '__main__':
 
         active_mode = new_mode
         active_mode.enter()
+        active_mode_name = mode_name
 
         return active_mode
 
@@ -194,11 +203,11 @@ if __name__ == '__main__':
         message_text = m.decode("utf-8")
 
         if request.method == 'PUT':
-            current_message = active_mode.set_message(message_text)
+            current_message = await active_mode.set_message(message_text, True)
         elif request.method == 'POST':
-            current_message = active_mode.update_message(message_text)
+            current_message = await active_mode.set_message(message_text, False)
         elif request.method == 'GET':
-            current_message = active_mode.get_message()
+            current_message = await active_mode.get_message()
         else:
             raise(AssertionError('unexpected request type'))
 

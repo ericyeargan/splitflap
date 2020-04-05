@@ -6,11 +6,41 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from service.message_formatter import MessageFormatter
 
+invalid_chars = ['@']
 
 def is_valid_char(char):
-    if char == '@':
+    if char in invalid_chars:
         return False
     return True
+
+class MessageFormatterJustifyTestCase(unittest.TestCase):
+    def setUp(self):
+        self._formatter = MessageFormatter(6, is_valid_char)
+
+    def test_right_justify(self):
+        lines = self._formatter.format(':f')
+        self.assertEqual(['     f'], lines)
+
+        # lines = self._formatter.format(':foo bar')
+        # self.assertEqual(['foo bar'], lines)
+
+    def test_center_justify(self):
+        lines = self._formatter.format(':foo:')
+        self.assertEqual([' foo  '], lines)
+
+        # lines = self._formatter.format(':foo ba:')
+        # self.assertEqual(['foo bar'], lines)
+
+    def test_left_justify(self):
+        lines = self._formatter.format('foo:')
+        self.assertEqual(['foo   '], lines)
+
+        # lines = self._formatter.format('foo bar:')
+        # self.assertEqual(['foo bar'], lines)
+
+    def test_multiline_justify(self):
+        lines = self._formatter.format(':foo bar baz:')
+        self.assertEqual([' foo  ', ' bar  ', ' baz  '], lines)
 
 
 class MessageFormatterTestCase(unittest.TestCase):
@@ -57,11 +87,6 @@ class MessageFormatterTestCase(unittest.TestCase):
         self.assertEqual('baz ', lines[2])
 
     def test_single_word_break(self):
-        # lines = self._formatter.format('foobar')
-        # self.assertEqual(
-        #     ['foob', 'ar  '],
-        #     lines)
-
         lines = self._formatter.format('fo foobar')
         self.assertEqual(
             ['fo f', 'ooba', 'r   '],

@@ -36,12 +36,12 @@ class SplitflapBase(object):
     def get_num_modules(self):
         return self._num_modules
 
-    def set_text(self, text):
+    def set_text(self, text, force_refresh):
         pass
 
     def clear_text(self):
         text = ''.ljust(self.get_num_modules())
-        return self.set_text(text)
+        return self.set_text(text, True)
 
 
 class MockSplitflap(SplitflapBase):
@@ -60,11 +60,8 @@ class MockSplitflap(SplitflapBase):
             self._last_status.append(status)
 
 
-    def set_text(self, text):
-        print(f'MockSplitflap.set_text: {text}')
-        return self._set_text(text)
-
-    def _set_text(self, text):
+    def set_text(self, text, force_refresh):
+        print(f'MockSplitflap.set_text (force={force_refresh}): {text}')
         validate_text(text)
 
         for module_index in range(0, self._num_modules):
@@ -72,10 +69,6 @@ class MockSplitflap(SplitflapBase):
                 self._last_status[module_index]['flap'] = text[module_index]
 
         return self._last_status
-
-    def update_text(self, text):
-        print(f'MockSplitflap.update_text: {text}')
-        return self._set_text(text)
 
     def recalibrate_all(self):
         return self._last_status
@@ -138,11 +131,11 @@ class Splitflap(SplitflapBase):
 
         return self._loop_for_status()
 
-    def set_text(self, text):
-        return self._change_text('=', text)
-
-    def update_text(self, text):
-        return self._change_text('+', text)
+    def set_text(self, text, force_refresh):
+        if force_refresh:
+            return self._change_text('=', text)
+        else:
+            return self._change_text('+', text)
 
     def recalibrate_all(self):
         self._transport.write('@')
