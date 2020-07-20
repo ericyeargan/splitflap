@@ -1,40 +1,52 @@
-import React, { useState } from 'react';
-
-import Jumbotron from 'react-bootstrap/Jumbotron';
-import Toast from 'react-bootstrap/Toast';
-import Container from 'react-bootstrap/Container';
-import Button from 'react-bootstrap/Button';
+import React, {useState, useEffect} from 'react';
 
 import './App.css';
 
-const ExampleToast = ({ children }) => {
-    const [show, toggleShow] = useState(true);
+const App = () => {
+    const API_BASE = `${process.env.REACT_APP_SERVICE_ADDRESS}/api`;
+    const [currentMessage, setCurrentMessage] = useState('');
 
-    return (
-        <>
-            {!show && <Button onClick={() => toggleShow(true)}>Show Toast</Button>}
-            <Toast show={show} onClose={() => toggleShow(false)}>
-                <Toast.Header>
-                    <strong className="mr-auto">React-Bootstrap</strong>
-                </Toast.Header>
-                <Toast.Body>{children}</Toast.Body>
-            </Toast>
-        </>
-    );
+    useEffect(() => {
+        fetch(`${API_BASE}/message`)
+            .then(res => res.text())
+            .then(message => setCurrentMessage(message))
+            .catch((err) => {
+                console.error('error getting user message: ', err);
+                setCurrentMessage('???');
+            });
+    }, [API_BASE]);
+
+    const handleUserMessageKeyUp = (event) => {
+        if (event.key === 'Enter') {
+            const messageInput = event.target;
+            let message = messageInput.value;
+            console.log('user message: ' + message);
+
+            fetch(`${API_BASE}/message`, {
+                method: 'PUT',
+                body: message
+            })
+                .then(res => res.text())
+                .then(message => {
+                    setCurrentMessage(message);
+                    messageInput.value = ''
+                })
+                .catch((err) => {
+                    console.error('error putting user message: ', err);
+                    setCurrentMessage('???');
+                })
+        }
+    };
+
+    const currentMessageStyle = {
+        whiteSpace: 'pre-wrap',
+        fontFamily: 'monospace'
+    }
+
+    return <div>
+        <input type="text" aria-label="Message" className="form-control" onKeyUp={handleUserMessageKeyUp}/>
+        <div style={currentMessageStyle}>{currentMessage}</div>
+    </div>
 };
-
-const App = () => (
-    <Container className="p-3">
-        <Jumbotron>
-            <h1 className="header">Welcome To React-Bootstrap</h1>
-            <ExampleToast>
-                We now have Toasts
-                <span role="img" aria-label="tada">
-          🎉
-        </span>
-            </ExampleToast>
-        </Jumbotron>
-    </Container>
-);
 
 export default App;

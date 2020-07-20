@@ -9,6 +9,7 @@ name = "pypi"
 requests = "*"
 pyserial = "*"
 quart = "*"
+quart-cors = "*"
 
 [requires]
 python_version = "3.7"

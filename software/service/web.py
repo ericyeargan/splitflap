@@ -6,6 +6,8 @@ from asyncio import CancelledError, shield
 
 from quart import Quart, request, make_response
 
+from quart_cors import cors
+
 from service.message_formatter import MessageFormatter
 
 
@@ -116,7 +118,7 @@ class SplitflapMessenger:
         self._message_task = shield(asyncio.create_task(self._display_message(message)))
         self._message_task.add_done_callback(self._on_display_message_task_done)
 
-        self._message_text = '\n'.join(message) + '\n'
+        self._message_text = '\n'.join(message).upper() + '\n'
         self._force_refresh = force_refresh
 
         return self._message_text
@@ -159,7 +161,8 @@ if __name__ == '__main__':
     active_mode = None
     active_mode_name = None
 
-    app = Quart(__name__)
+    app = Quart(__name__, static_url_path='', static_folder=os.environ.get('WEBAPP_BUILD_PATH'))
+    app = cors(app, allow_origin="*")
 
     async def _activate_mode(mode_name):
         global active_mode
@@ -207,7 +210,7 @@ if __name__ == '__main__':
         elif request.method == 'POST':
             current_message = await active_mode.set_message(message_text, False)
         elif request.method == 'GET':
-            current_message = await active_mode.get_message()
+            current_message = active_mode.get_message()
         else:
             raise(AssertionError('unexpected request type'))
 
