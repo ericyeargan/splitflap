@@ -135,6 +135,8 @@ if __name__ == '__main__':
         from splitflap.transport import EspLinkTransport
         from splitflap.splitflap import Splitflap
 
+        print(f'connecting to ESP-Link at address: {splitflap_host}' )
+
         transport = EspLinkTransport(splitflap_host)
         transport.open()
         splitflap = Splitflap(transport)
@@ -142,11 +144,15 @@ if __name__ == '__main__':
         from splitflap.transport import SerialTransport
         from splitflap.splitflap import Splitflap
 
+        print(f'connecting to serial port: {splitflap_device}' )
+
         transport = SerialTransport(splitflap_device, 38400)
         transport.open()
         splitflap = Splitflap(transport)
     else:
         from splitflap.splitflap import MockSplitflap
+
+        print(f'using mock splitflap' )
 
         splitflap = MockSplitflap(12)
 
@@ -216,4 +222,4 @@ if __name__ == '__main__':
 
         return await make_response(current_message, 200)
 
-    app.run()
+    app.run(host='0.0.0.0')
