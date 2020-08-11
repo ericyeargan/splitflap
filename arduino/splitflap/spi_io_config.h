@@ -19,7 +19,7 @@
 
 #include <SPI.h>
 
-#define NEOPIXEL_DEBUGGING_ENABLED true
+#define NEOPIXEL_DEBUGGING_ENABLED false
 
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__)
   #define NEOPIXEL_PIN 6

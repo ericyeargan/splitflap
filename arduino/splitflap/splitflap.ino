@@ -209,6 +209,9 @@ inline void run_iteration() {
           if (recv_count > 0) {
             int const op_code = recv_buffer[0];
             switch (op_code) {
+              case '?':
+                dump_status();
+                break;
               case '@':
                 for (uint8_t i = 0; i < NUM_MODULES; i++) { // NOLINT(modernize-loop-convert)
                   modules[i].ResetErrorCounters();
