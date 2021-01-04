@@ -21,6 +21,8 @@
 #define SPI_IO true
 #define BLUETOOTH true
 
+#include <stdint.h>
+
 // This should match the order of flaps on the spool:
 const uint8_t flaps[] = {
   ' ',
@@ -33,6 +35,7 @@ const uint8_t flaps[] = {
 };
 
 /*************************/
+
 
 #include "splitflap_module.h"
 
@@ -156,6 +159,7 @@ inline int8_t FindFlapIndex(uint8_t character) {
 
 bool was_stopped = false;
 bool pending_no_op = false;
+bool bell_on_stop = false;
 
 inline void run_iteration() {
     boolean all_idle = true;
@@ -203,53 +207,60 @@ inline void run_iteration() {
 
       bell.Update();
 
+      static const int OP_CODE_UPDATE_MASK = 0b00111100;
+      static const int OP_CODE_FORCE_REFRESH_MASK = 0x01;
+      static const int OP_CODE_BELL_MASK = 0x02;
+
       while (Serial.available() > 0) {
         int b = Serial.read();
         if (b == '\n') {
           if (recv_count > 0) {
             int const op_code = recv_buffer[0];
             switch (op_code) {
-              case '?':
-                dump_status();
-                break;
               case '@':
                 for (uint8_t i = 0; i < NUM_MODULES; i++) { // NOLINT(modernize-loop-convert)
                   modules[i].ResetErrorCounters();
                   modules[i].GoHome();
                 }
                 break;
-              case '=':
-              case '+': {
-                SplitflapModule::FlapRefresh refresh =
-                    op_code == '=' ? SplitflapModule::FLAP_REFRESH_FORCE
-                                   : SplitflapModule::FLAP_REFRESH_NONE;
-
-                Serial.print(FAVR("{\"type\":\"move_echo\", \"refresh\":"));
-                if (refresh == SplitflapModule::FLAP_REFRESH_FORCE) {
-                  Serial.print(FAVR("\"force\""));
-                } else {
-                  Serial.print(FAVR("\"none\""));
-                }
-
-                Serial.print(FAVR(", \"dest\":\""));
-                for (uint8_t i = 1; i < recv_count; i++) {
-                  int8_t index = FindFlapIndex(recv_buffer[i]);
-                  if (index != -1) {
-                    modules[i - 1].GoToFlapIndex(index, refresh);
-                  }
-                  Serial.write(recv_buffer[i]);
-                }
-                Serial.print(FAVR("\"}\n"));
-                Serial.flush();
+              case 'A':
+                dump_status();
                 break;
-              }
-              case 'd':
-                  Serial.print("ding\n");
-                  bell.Ding();
-                  break;
               default:
-              case '#':
-                pending_no_op = true;
+                if ((op_code & OP_CODE_UPDATE_MASK) == OP_CODE_UPDATE_MASK) {
+                    SplitflapModule::FlapRefresh refresh = op_code & OP_CODE_FORCE_REFRESH_MASK 
+                      ? SplitflapModule::FLAP_REFRESH_FORCE 
+                      : SplitflapModule::FLAP_REFRESH_NONE;
+
+                    bell_on_stop = op_code & OP_CODE_BELL_MASK;
+
+                    Serial.print(FAVR("{\"type\":\"move_echo\", \"refresh\":"));
+                    if (refresh == SplitflapModule::FLAP_REFRESH_FORCE) {
+                    Serial.print(FAVR("\"force\""));
+                    } else {
+                      Serial.print(FAVR("\"none\""));
+                    }
+
+                    Serial.print(FAVR(", \"bell\":"));
+                    if (bell_on_stop) {
+                      Serial.print(FAVR("\"true\""));
+                    } else {
+                      Serial.print(FAVR("\"false\""));
+                    }
+
+                    Serial.print(FAVR(", \"dest\":\""));
+                    for (uint8_t i = 1; i < recv_count; i++) {
+                      int8_t index = FindFlapIndex(recv_buffer[i]);
+                      if (index != -1) {
+                        modules[i - 1].GoToFlapIndex(index, refresh);
+                      }
+                      Serial.write(recv_buffer[i]);
+                    }
+                    Serial.print(FAVR("\"}\n"));
+                    Serial.flush();
+                } else {
+                  pending_no_op = true;
+                }
               break;
             }
           }
@@ -307,7 +318,9 @@ inline void run_iteration() {
       }
   
       if (!was_stopped && all_stopped) {
-        bell.Ding();
+        if (bell_on_stop) {
+          bell.Ding();
+        }
         dump_status();
       }
 
